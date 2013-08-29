@@ -39,7 +39,7 @@ module SteroidAggregations
       end
  
       def parent_instance_reload(record)
-        parent_instance(record).reload
+        parent_instance(record).try :reload
       end
    
       def current_aggregation_value(record)
