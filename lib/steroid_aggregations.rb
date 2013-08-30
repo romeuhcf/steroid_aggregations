@@ -60,6 +60,7 @@ module SteroidAggregations
       end
 
       def aggregation_patch(diff, record)
+        return if diff == 0.0
         @parent_klass.update_counters(aggregator_id(record), {cache_column => diff})
         parent_instance_reload(record)
       end
