@@ -22,6 +22,14 @@ module SteroidAggregations
     class Base
       attr_reader :association_name
       attr_reader :options
+      def aggregate_on(event, record)
+        parent = parent_instance(record)
+        if parent && parent.__skip_steroid_aggregations?
+          Rails.logger.debug "Skipping steroid aggregations on #{record} for #{parent} "
+        else
+          my_aggregate_on(event, record) 
+        end
+      end
       def cache_column
         @options[:on] || [association_name, @options[:field], self.class.name.split('::').last.downcase].compact.join('_')
       end
@@ -94,7 +102,7 @@ module SteroidAggregations
       end
 
 
-      def aggregate_on(event, record)
+      def my_aggregate_on(event, record)
         return if event == :update
         diff = event == :create ? 1 : -1
         aggregation_patch(diff, record)
@@ -107,7 +115,7 @@ module SteroidAggregations
         parent_instance.send(@association_name).sum(child_aggregatable_field)
       end
 
-      def aggregate_on(event, record)
+      def my_aggregate_on(event, record)
         diff = if event == :update
           new_value(record) - old_value(record)
         else
@@ -122,7 +130,7 @@ module SteroidAggregations
       def recalculate(parent_instance)
         parent_instance.send(@association_name).average(child_aggregatable_field)
       end
-      def aggregate_on(event, record)
+      def my_aggregate_on(event, record)
         reset_cache!(parent_instance(record)) # XXX improve this
       end
     end
@@ -132,7 +140,7 @@ module SteroidAggregations
         parent_instance.send(@association_name).minimum(child_aggregatable_field)
       end
 
-      def aggregate_on(event, record)
+      def my_aggregate_on(event, record)
         self.send("aggregate_on_#{event}", record)
       end
 
@@ -160,7 +168,7 @@ module SteroidAggregations
         parent_instance.send(@association_name).maximum(child_aggregatable_field)
       end
 
-      def aggregate_on(event, record)
+      def my_aggregate_on(event, record)
         self.send("aggregate_on_#{event}", record)
       end
 
@@ -228,6 +236,19 @@ module SteroidAggregations
     end
   end
   module InstanceMethods
+    def postpone_aggregations
+      @__skip_steroid_aggregations = true
+      Rails.logger.debug("#{self} Postponing steroid aggregations")
+      yield if block_given?
+      Rails.logger.debug("#{self} Recalculating postponed steroid aggregations")
+      @__skip_steroid_aggregations = false
+      self.reset_aggregations!
+    end
+
+    def __skip_steroid_aggregations?
+      @__skip_steroid_aggregations && true
+    end
+
     def reset_aggregations!
       self.reload.class.steroid_aggregations.each do |aggregation|
         aggregation.reset_cache!(self)
