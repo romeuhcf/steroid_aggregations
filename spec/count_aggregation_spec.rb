@@ -75,6 +75,60 @@ describe 'count cache' do
       @bank.reload.accounts_count.should == 0
     end
   end
+  describe 'guard option' do
+    it "should filter on update count when creation event"  do
+      @bank.accounts.create!(:balance => 30.0)
+      a = @bank.accounts.create!(:balance => 60.6)
+      a.update_attribute(:last_audited_at , Time.now)
+      a.update_attribute(:last_audited_at , Time.now)
+      @bank.reload.accounts_audited_count.should == 1
+    end
+
+
+    it "should filter on update count when destroy event"  do
+      a = @bank.accounts.create!(:balance => 30.0)
+      b = @bank.accounts.create!(:balance => 60.6)
+      a.update_attribute(:last_audited_at , Time.now)
+      a.update_attribute(:last_audited_at , Time.now)
+      @bank.reload.accounts_audited_count.should == 1
+      a.destroy
+      @bank.reload.accounts_audited_count.should == 0
+      b.destroy
+      @bank.reload.accounts_audited_count.should == 0
+    end
+
+
+    it "should filter on update count when update event"  do
+      a = @bank.accounts.create!(:balance => 60.6)
+      b = @bank.accounts.create!(:balance => 30.0)
+      a.update_attribute(:last_audited_at , Time.now)
+      a.update_attribute(:last_audited_at , Time.now)
+      @bank.reload.accounts_audited_count.should == 1
+      a.update_attribute(:last_audited_at , nil)
+      @bank.reload.accounts_audited_count.should == 0
+      a.update_attribute(:last_audited_at , Time.now)
+      a.update_attribute(:last_audited_at , Time.now)
+      @bank.reload.accounts_audited_count.should == 1
+      b.update_attribute(:last_audited_at , Time.now)
+      b.update_attribute(:last_audited_at , Time.now)
+      b.update_attribute(:last_audited_at , Time.now)
+      @bank.reload.accounts_audited_count.should == 2
+      a.update_attribute(:last_audited_at , nil)
+      b.update_attribute(:last_audited_at , nil)
+      @bank.reload.accounts_audited_count.should == 0
+    end
+
+
+   it "should filter on reset what to count"  do
+      @bank.accounts.create!(:balance => 30.0)
+      a = @bank.accounts.create!(:balance => 60.6)
+      a.update_attribute(:last_audited_at , Time.now)
+      a.update_attribute(:last_audited_at , Time.now)
+      @bank.reset_aggregations!
+      @bank.reload.accounts_audited_count.should == 1
+    end
+
+ end
 
 end
 

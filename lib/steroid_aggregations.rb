@@ -99,13 +99,28 @@ module SteroidAggregations
     class Count < Base
 
       def recalculate(parent_instance)
-        parent_instance.send(@association_name).count
+        scoped = parent_instance.send(@association_name)
+        scoped = scoped.where([@options[:guard], "IS NOT NULL"].join(' ')) if @options[:guard]
+        scoped.count
       end
 
 
       def my_aggregate_on(event, record)
-        return if event == :update
-        diff = event == :create ? 1 : -1
+        diff = if !@options[:guard]
+          return if  event == :update
+          event == :create ? 1 : -1
+        else
+          was = record.send("#{@options[:guard]}_was") ? 1 : 0
+          is = record.send("#{@options[:guard]}") ? 1 : 0
+
+          if event == :destroy
+            was * -1
+          elsif event == :create
+            is 
+          else
+            -1 * (was) + (is)
+          end
+        end
         aggregation_patch(diff, record)
       end
 
