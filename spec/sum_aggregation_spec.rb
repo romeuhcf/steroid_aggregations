@@ -16,7 +16,7 @@ describe 'sum cache' do
       @bank.accounts.create!(:balance => 30.0)
       @bank.accounts.create!(:balance => 30.5)
       @bank.accounts.create!(:balance => 30.4)
-      @bank.reload.accounts_balance_sum.should == 90.9
+      @bank.reload.accounts_balance_sum.should be_within(0.0005).of(90.9)
     end
     it "should not change when more zeroed are added" do
       @bank.accounts.create!(:balance => 30.0)
@@ -75,7 +75,7 @@ describe 'sum cache' do
     it 'should be zero' do
       @bank.accounts.create!(:balance => 30.0)
       @bank.accounts.create!(:balance => 60.6)
-      @bank.reload.accounts_balance_sum.should == 90.6
+      @bank.reload.accounts_balance_sum.should  be_within(0.0005).of(90.6)
       @bank.accounts.delete_all
       @bank.reset_aggregations!
       @bank.reload.accounts_balance_sum.should == 0.0

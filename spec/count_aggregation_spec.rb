@@ -28,7 +28,7 @@ describe 'count cache' do
       @bank.reload.accounts_count.should == 4
       @bank.accounts.create!
       @bank.accounts.create!
-      SteroidAggregations::Aggregations::Count.any_instance.should_receive(:aggregate_on).and_call_original
+      @bank.steroid_aggregations.find{|o| o.class == SteroidAggregations::Aggregations::Count}.should_receive(:aggregate_on).and_call_original
       @bank.accounts.create!
       @bank.reload.accounts_count.should == 7
     end
@@ -38,7 +38,7 @@ describe 'count cache' do
       @bank.reload.accounts_count.should == 0
       account = @bank.accounts.create!
       @bank.reload.accounts_count.should == 1
-      SteroidAggregations::Aggregations::Count.any_instance.should_receive(:aggregate_on).and_call_original
+      @bank.steroid_aggregations.find{|o| o.class == SteroidAggregations::Aggregations::Count}.should_receive(:aggregate_on).and_call_original
       account.balance = 10; account.save!
       @bank.reload.accounts_count.should == 1
     end

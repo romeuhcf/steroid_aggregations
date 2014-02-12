@@ -25,11 +25,12 @@ module SteroidAggregations
       def aggregate_on(event, record)
         parent = parent_instance(record)
         if parent && parent.__skip_steroid_aggregations?
-          Rails.logger.debug "Skipping steroid aggregations on #{record} for #{parent} "
+          Rails.logger.debug "Skipping steroid aggregations on #{record}##{event}|#{association_name}|#{options} for #{parent} "
         else
           my_aggregate_on(event, record) 
         end
       end
+
       def cache_column
         @options[:on] || [association_name, @options[:field], self.class.name.split('::').last.downcase].compact.join('_')
       end
